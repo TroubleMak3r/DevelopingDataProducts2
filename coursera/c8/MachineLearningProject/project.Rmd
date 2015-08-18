@@ -1,0 +1,78 @@
+---
+title: "Excercise correctness prediction"
+author: "Dominik L"
+date: "Monday, August 17, 2015"
+output: html_document
+---
+
+The goal of the project is to predict the manner in which subjects do the exercise, this is the value of the 'classe' variable. TO achieve this goal, we download the training dataset and do the following steps:
+1. Read the dataset into R and do some basic exploratory analysis in order to get the hang of how the data looks like and to be able to preprocess it.
+```{r}
+library(caret)
+dane<-read.csv("dane.csv")
+table(dane$classe)
+```
+2. We remove the variables, which have more then 95% of NA'a
+```{r}
+dane1<-dane
+dane1[dane1==""]<-NA
+wektor<-colSums(is.na(dane1))>(.95*nrow(dane))
+dane2<-dane1[,-which(wektor)]
+```
+3. We remove variables, that are highly correlated with each other.
+```{r,results='hide'}
+korelacja<-cor(dane2[sapply(dane2, is.numeric)])
+bez_korelacji <- findCorrelation(korelacja, cutoff = .90, verbose = TRUE)
+dane3<-dane2[,-bez_korelacji]
+```
+4. Remove the variables considered useless: X (which is an ordinal number, different for each observation), username (it's subject's name), raw_timestamp and cvtd_timestamp variables (they indicate the time of excercise and will definately lead to overfitting)
+```{r}
+dane4<-dane3[,-c(1,2)]
+dane4<-dane3[ ,!grepl("^cvtd|^raw" , colnames(dane3) ) ]
+```
+
+5. Now that we have preprocessed our data we create a training and testing datasets and train our model using Decision tree model:
+
+```{r}
+set.seed(123)
+testortrain<-createDataPartition(dane4$classe,p=0.7,list=F)
+trainingdata<-dane4[testortrain,]
+testingdata<-dane4[-testortrain,]
+```
+```{r, eval=FALSE}
+model1<-train(classe~.,data=trainingdata,method="rpart")
+```
+6. We compute the misclassification rate to find out that out model is far from being accurate:
+```{r}
+(100-sum(diag(confusionMatrix(model1)$table)))/100
+```
+7. Since we don't want our work to go down the drain we use this model to pick 10 most important variables for the next model - random forest (I know there must be some easier way for this, but I coudn't come up with anything better:
+
+```{r}
+variables<-data.frame(varImp(model1)$importance)
+variables$v<-rownames(variables)
+ktore<-variables[order(-variables$Overall),][1:10,2]
+ktore2<-NULL
+for (i in 1:10) {ktore2<-c(ktore2,which(colnames(trainingdata)==ktore[i]))}
+ktore2<-c(ktore2,ncol(trainingdata))
+trdataNew<-trainingdata[,ktore2]
+```
+8. Now we train out random forest model with 1 output variable and 10 independent variables (with some additional options to speed up this process). Then we calculate the misclassification rate for the training data
+```{r}
+model2<-train(classe~.,data=trdataNew,method="rf",trControl = trainControl(allowParallel=T, method="cv", number=4))
+```
+```{r}
+(100-sum(diag(confusionMatrix(model2)$table)))/100
+```
+9. We taker a closer look at our model to find out that Out-of-bag error is around 0.23% and perform one more cross validation on our testing data to be sure there is no overfitting in our model:
+```{r}
+print(model2$finalModel)
+
+predykcja<-predict(model2,newdata=testingdata)
+
+1-sum(diag(table(predykcja,testingdata$classe)))/nrow(testingdata)
+```
+10. And we find out that our model almost perfectly fits the testing data. Lastly, we make a prediction with our testing data:
+```{r}
+predict(model2,newdata=test)
+```
