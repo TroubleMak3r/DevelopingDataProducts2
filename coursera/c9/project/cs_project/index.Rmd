@@ -1,0 +1,41 @@
+---
+title       : How average are you?
+subtitle    : Shiny application made for the "Developing data products" course
+author      : Domiik L
+job         : 
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      # 
+widgets     : []            # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+
+
+## "Developing data products" is part of a "Data Science" specialization on coursera.org
+-  There are 9 courses in the specialization, all of which cover various aspects and extensions of R language.
+- For more information, visit https://www.coursera.org/specialization/jhudatascience/1?utm_medium=catalog
+
+--- 
+
+## How average are you?
+
+- The application takes the data entered by user (user's sex, age and height) and then, once the user presses 'go' button, compares it to world's average values of those features. Moreover, it displays some graphics showing differences in average values of those features across countries."
+
+---
+
+## some R code that get's evaluated and displaed
+
+```{r}
+data(mtcars)
+summary(mtcars)
+```
+
+---
+
+<center> 
+
+### Thank you!
+
+</center>
